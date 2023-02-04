@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import { getXpathSelector, addItemToArray, waitForElm, getIframeSize } from "../utils/helpers"
+import { getXpathSelector, addItemToArray, waitForElm } from "../utils/helpers"
 import { SocketService } from "../services/socketService"
 import MutationObserver from "mutation-observer"
 
@@ -14,11 +14,10 @@ export default function CollabIframe({ iframeIndex }) {
     const mouseMoveHandler = event => {
         const iframe = document.querySelector(`#iframe_${iframeIndex}`);
         if (iframe) {
-            const width = window.screen.width;
-            const height = window.screen.height
-            const x = event.screenX / width;
-            const y = event.screenY / height;
-            console.log(x, y)
+            const { width, height } = iframe.getBoundingClientRect();
+
+            const x = event.clientX / width;
+            const y = event.clientY / height;
             SocketService.emit("mousemove", { x, y, iframeIndex });
         }
 
@@ -34,17 +33,25 @@ export default function CollabIframe({ iframeIndex }) {
 
     const observer = new MutationObserver(mutations => {
         mutations.forEach(elem => {
+            if (elem.removedNodes.length > 0) {
+                // console.log(ref.current)
+                const popup = ref.current.contentWindow.document.querySelector(".floating-popup")
+                // console.log(popup, ref.current, "popup")
+                if (popup === null) {
+                    SocketService.emit("removedmutationrecord", { iframeIndex });
+                }
+                return;
+            }
             if (elem.addedNodes.length > 0) {
                 const mutationTarget = getXpathSelector(elem.target);
                 const addedElemHTML = elem.addedNodes[0].outerHTML;
+                console.log(addedElemHTML, "aaaaa" , mutations.length)
                 if (addedElemHTML) {
+                    // console.log(addedElemHTML)
                     SocketService.emit("addedmutationrecord", { mutationTarget, addedElemHTML, iframeIndex });
                     addItemToArray(localMutationRecords, elem.addedNodes[0], maxNumOfRecords);
                 }
                 return;
-            }
-            if (elem.removedNodes.length > 0) {
-                SocketService.emit("removedmutationrecord", { iframeIndex });
             }
             if (elem.type === 'attributes') {
                 const indexofMut = localMutationRecords.indexOf(elem.target);
@@ -63,9 +70,10 @@ export default function CollabIframe({ iframeIndex }) {
             }
         })
     })
-
+    console.log(ref.current);
 
     useEffect(() => {
+        // console.log(addedMutations, localMutationRecords, "on init?")
 
         const iframe = ref.current;
         let appWindow; let map;
@@ -81,10 +89,11 @@ export default function CollabIframe({ iframeIndex }) {
         })
 
         SocketService.on(`addMut${iframeIndex}`, (data) => {
-            if (!map) {
+            if (!map || (iframe.contentWindow === null)) {
                 return;
             }
             observer.disconnect();
+            console.log("add mut", iframe)
             const mapRef = iframe.contentWindow.document.querySelector("div.mapboxgl-map");
             if (data.addedElemHTML) {
                 var tempDiv = document.createElement('div');
@@ -105,17 +114,31 @@ export default function CollabIframe({ iframeIndex }) {
         })
 
         SocketService.on(`deleteMut${iframeIndex}`, () => {
+            if (!map || (iframe.contentWindow === null)) {
+                return;
+            }
+            observer.disconnect();
+            console.log("delete mut")
             addedMutations.forEach((mut) => {
                 mut?.remove();
             })
+            const mapRef = iframe.contentWindow.document.querySelector("div.mapboxgl-map");
+            if (mapRef) {
+                observer.observe(mapRef, { attributes: true, childList: true, subtree: true });
+            }
+
         })
 
         SocketService.on(`modifyMut${iframeIndex}`, (data) => {
+            if (!map || (iframe.contentWindow === null)) {
+                return;
+            }
             observer.disconnect();
             const mutationTarget = iframe.contentWindow.document.evaluate(data.mutationTarget,
                 iframe.contentWindow.document, null,
                 XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 
+            // console.log("modify mut", mutationTarget)
             if (mutationTarget) {
                 mutationTarget.innerHTML = data.mutatedElemHTML;
                 mutationTarget.attributes[data.changedAttribute].value = data.mutationValue;
@@ -144,13 +167,14 @@ export default function CollabIframe({ iframeIndex }) {
 
 
         return () => {
-            appWindow.removeEventListener("mousemove", mouseMoveHandler);
-            appWindow.removeEventListener("mousedown", mouseClickHandler);
+            // appWindow.removeEventListener("mousemove", mouseMoveHandler);
+            // appWindow.removeEventListener("mousedown", mouseClickHandler);
+            observer.disconnect();
             clearInterval(urlObserver);
         }
-    })
+    }, [])
     return (
         <iframe ref={ref} id={"iframe_" + iframeIndex}
-            src="http://52.87.229.169:3000/explore/small-business-support#map=5.35/-32.197/135"></iframe>
+            src="http://52.87.229.169:3000/explore/rochester#map=9.64/43.1556/-77.685"></iframe>
     )
 }

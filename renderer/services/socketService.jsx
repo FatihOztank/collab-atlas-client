@@ -4,26 +4,27 @@ import { io } from "socket.io-client";
 import { executeClick, drawAvatar } from "../utils/helpers";
 
 export const SocketService = new EventEmitter();
-const clientSocket = io.connect("https://auspicious-silo-283816.lm.r.appspot.com/");
+// const ClientSocket = io.connect("https://auspicious-silo-283816.lm.r.appspot.com/");
+const ClientSocket = io.connect("http://localhost:8080/");
 
 SocketService.on("mousemove", (data) => {
     const x = data.x;
     const y = data.y;
     const iframeIndex = data.iframeIndex;
-    clientSocket.emit("mousemove", { x, y, iframeIndex });
+    ClientSocket.emit("mousemove", { x, y, iframeIndex });
 })
 
 SocketService.on("mousedown", (data) => {
     const selectorString = data.selectorString;
     const iframeIndex = data.iframeIndex;
-    clientSocket.emit("mousedown", { selectorString, iframeIndex });
+    ClientSocket.emit("mousedown", { selectorString, iframeIndex });
 })
 
 SocketService.on("addedmutationrecord", (data) => {
     const mutationTarget = data.mutationTarget;
     const addedElemHTML = data.addedElemHTML;
     const iframeIndex = data.iframeIndex;
-    clientSocket.emit("addedmutationrecord", {
+    ClientSocket.emit("addedmutationrecord", {
         mutationTarget, addedElemHTML, iframeIndex
     })
 
@@ -31,7 +32,7 @@ SocketService.on("addedmutationrecord", (data) => {
 
 SocketService.on("removedmutationrecord", (data) => {
     const iframeIndex = data.iframeIndex;
-    clientSocket.emit("removedmutationrecord", { iframeIndex });
+    ClientSocket.emit("removedmutationrecord", { iframeIndex });
 })
 
 SocketService.on("modifiedAttributeRecord", (data) => {
@@ -41,33 +42,36 @@ SocketService.on("modifiedAttributeRecord", (data) => {
     const mutatedElemHTML = data.mutatedElemHTML;
     const iframeIndex = data.iframeIndex;
 
-    clientSocket.emit("modifiedAttributeRecord", {
+    ClientSocket.emit("modifiedAttributeRecord", {
         changedAttribute, mutationTarget, mutationValue, 
         mutatedElemHTML, iframeIndex
     });
 })
 
-clientSocket.on("locationrecord", (data => {
-    console.log(data.x, data.y);
+SocketService.on("iframeToggle", () => {
+    ClientSocket.emit("opensecondiframe", {});
+})
+
+ClientSocket.on("locationrecord", (data => {
     drawAvatar(data.iframeIndex, data.x, data.y);
 
 }))
 
-clientSocket.on("eventrecord", (data) => {
+ClientSocket.on("eventrecord", (data) => {
     executeClick(data.selectorString, data.iframeIndex);
 })
 
-clientSocket.on("addedmutation", (data) => {
+ClientSocket.on("addedmutation", (data) => {
     const mutationTarget = data.mutationTarget;
     const addedElemHTML = data.addedElemHTML;
     SocketService.emit(`addMut${data.iframeIndex}`, { mutationTarget, addedElemHTML });
 })
 
-clientSocket.on("deletemutations", (data) => {
+ClientSocket.on("deletemutations", (data) => {
     SocketService.emit(`deleteMut${data.iframeIndex}`);
 })
 
-clientSocket.on("attributeModify", (data) => {
+ClientSocket.on("attributeModify", (data) => {
     const changedAttribute = data.changedAttribute; 
     const mutationTarget = data.mutationTarget;
     const mutationValue = data.mutationValue;
@@ -76,6 +80,10 @@ clientSocket.on("attributeModify", (data) => {
     SocketService.emit(`modifyMut${data.iframeIndex}`, {
         changedAttribute, mutationTarget, mutationValue, mutatedElemHTML
     });
+})
+
+ClientSocket.on("secondiframeopened",() => {
+    SocketService.emit("secondIframeToggled", {});
 })
 
 

@@ -1,3 +1,5 @@
+import avatarImg  from "../public/images/avatar.png";
+
 const bannedXPathSelectors = ["svg", "path"];
 
 function returnIndexOfElement(elem) {
@@ -33,7 +35,7 @@ export function getXpathSelector(elem) {
 
 
 export function executeClick(selectorString, iframeIndex) {
-    if (document === undefined) {
+    if (typeof window === "undefined") {
         return;
     }
     const iframeDocument = document.querySelector(`#iframe_${iframeIndex}`).contentWindow.document;
@@ -75,41 +77,34 @@ export function getIframeSize(iframeIndex) {
 }
 
 export function drawAvatar(iframeIndex, x, y) {
-    if (document === undefined) {
+    if (typeof document === "undefined") {
         return;
     }
 
     const iframe = document.querySelector(`#iframe_${iframeIndex}`);
     const avatar = document.querySelector(`#avatar_${iframeIndex}`);
-    const { width, height } = iframe.getBoundingClientRect();
-    
     const scaledX = (x) * 100;
     const scaledY = (y) * 100;
-    console.log(x,y,scaledX, scaledY);
 
     if (!avatar) {
-        var tempDiv = document.createElement("div");
-        var avatarElem = document.createElement('div');
+        var tempDiv = document.createElement("div");x   
+        var avatarElem = document.createElement('img');
         avatarElem.setAttribute('id', `avatar_${iframeIndex}`);
         avatarElem.setAttribute('class', `avatar`);
-        avatarElem.innerText = "AB";
+        avatarElem.setAttribute('src', `${avatarImg.src}`);
         avatarElem.style.cssText = `width: 50px;
-        height: 50px;
-        top: ${scaledY}%;
-        left: ${scaledX}%;
-        position: absolute;
-        background-color: red;
-        visibility: visible;
-        z-index: 10;`;
-        console.log(iframe);
+                                    height: 50px;
+                                    top: ${scaledY}%;
+                                    left: ${scaledX}%;
+                                    position: absolute;
+                                    opacity: 0.5;
+                                    visibility: visible;
+                                    z-index: 10;`;
+
         tempDiv.innerHTML = avatarElem.outerHTML;
         iframe.parentNode.appendChild(tempDiv.firstChild);
-        console.log(iframe);
     } else {
         avatar.style.top = `${scaledY}%`;
         avatar.style.left = `${scaledX}%`;
-        console.log(avatar);
     }
-
-
 }

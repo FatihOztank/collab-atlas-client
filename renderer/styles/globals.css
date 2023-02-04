@@ -86,8 +86,8 @@ body {
   overflow-x: hidden;
 }
 iframe {
-  width: 45%;
-  height: 95%;
+  width: 100%;
+  height: 100%;
   z-index: 10;
 }
 
@@ -110,4 +110,20 @@ a {
   html {
     color-scheme: dark;
   }
+}
+
+.flex-container {
+  display: flex;
+}
+
+.flex-child {
+  flex: 1;
+  border: 2px solid yellow;
+  position: relative;
+  width: 45%;
+  height: 90%;
+}  
+
+.flex-child:first-child {
+  margin-right: 20px;
 }
