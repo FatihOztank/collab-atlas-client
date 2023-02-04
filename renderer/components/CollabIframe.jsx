@@ -45,9 +45,9 @@ export default function CollabIframe({ iframeIndex }) {
             if (elem.addedNodes.length > 0) {
                 const mutationTarget = getXpathSelector(elem.target);
                 const addedElemHTML = elem.addedNodes[0].outerHTML;
-                console.log(addedElemHTML, "aaaaa" , mutations.length)
+                // console.log(addedElemHTML, "aaaaa" , mutations.length)
                 if (addedElemHTML) {
-                    // console.log(addedElemHTML)
+                    console.log("main", elem.addedNodes[0], elem.target)
                     SocketService.emit("addedmutationrecord", { mutationTarget, addedElemHTML, iframeIndex });
                     addItemToArray(localMutationRecords, elem.addedNodes[0], maxNumOfRecords);
                 }
@@ -70,7 +70,7 @@ export default function CollabIframe({ iframeIndex }) {
             }
         })
     })
-    console.log(ref.current);
+    // console.log(ref.current);
 
     useEffect(() => {
         // console.log(addedMutations, localMutationRecords, "on init?")
@@ -93,7 +93,6 @@ export default function CollabIframe({ iframeIndex }) {
                 return;
             }
             observer.disconnect();
-            console.log("add mut", iframe)
             const mapRef = iframe.contentWindow.document.querySelector("div.mapboxgl-map");
             if (data.addedElemHTML) {
                 var tempDiv = document.createElement('div');
@@ -102,9 +101,10 @@ export default function CollabIframe({ iframeIndex }) {
                     data.mutationTarget, iframe.contentWindow.document, null,
                     XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 
-                if (mutationTarget === mapRef) {
+                if ((mutationTarget === mapRef) || (mutationTarget === addedMutations.at(-1))) {
                     mutationTarget.appendChild(tempDiv.firstChild);
                     addedMutations.push(mutationTarget.lastChild);
+                    console.log("receiver", mutationTarget.lastChild);
                 }
                 tempDiv.remove();
             }
