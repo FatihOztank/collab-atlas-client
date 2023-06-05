@@ -1,7 +1,7 @@
 
 import EventEmitter from "events";
 import { io } from "socket.io-client";
-import { executeClick, drawAvatar } from "../utils/helpers";
+import { executeClick, executeWheel, drawAvatar } from "../utils/helpers";
 
 export const SocketService = new EventEmitter();
 // const ClientSocket = io.connect("https://auspicious-silo-283816.lm.r.appspot.com/");
@@ -18,6 +18,14 @@ SocketService.on("mousedown", (data) => {
     const selectorString = data.selectorString;
     const iframeIndex = data.iframeIndex;
     ClientSocket.emit("mousedown", { selectorString, iframeIndex });
+})
+
+SocketService.on("mousewheel", (data) => {
+    const scrollY = data.scrollY;
+    const iframeIndex = data.iframeIndex;
+    const scaledX = data.x;
+    const scaledY = data.y;
+    ClientSocket.emit("mousewheel", { scrollY, iframeIndex, scaledX, scaledY });
 })
 
 SocketService.on("addedmutationrecord", (data) => {
@@ -59,6 +67,10 @@ ClientSocket.on("locationrecord", (data => {
 
 ClientSocket.on("eventrecord", (data) => {
     executeClick(data.selectorString, data.iframeIndex);
+})
+
+ClientSocket.on("scrollrecord", (data) => {
+    executeWheel(data.scrollY, data.iframeIndex, data.scaledX, data.scaledY);
 })
 
 ClientSocket.on("addedmutation", (data) => {

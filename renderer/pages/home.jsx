@@ -25,16 +25,18 @@ function Home() {
 			</Head>
 			<main id='__app' className="flex-container">
 				{<div className="flex-child">
-					<CollabIframe iframeIndex={1} />
+					<CollabIframe iframeIndex={1}
+						iframeUrl={'http://52.87.229.169:3000/explore/small-business-support#map=5.35/-32.197/135'} />
 				</div>}
 				{isSecondIframeOpen && <div className="flex-child">
-					<CollabIframe iframeIndex={2} />
+					<CollabIframe iframeIndex={2}
+						iframeUrl={'http://52.87.229.169:3000/explore/small-business-support#map=5.35/-32.197/135'} />
 				</div>}
-			<div>
-
-			</div>
 			</main>
-			<button onClick={() => buttonHandler()} style={{position: "fixed", color: "blue", height: "8%", top: "90%"}}>Toggle Second Iframe</button>
+			<button onClick={() => buttonHandler()} style={{
+				position: "fixed", color: "blue", height: "8%", top: "90%", backgroundColor: "white", 
+			}}
+			>Toggle Second Iframe</button>
 		</>
 	);
 }

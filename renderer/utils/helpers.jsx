@@ -1,4 +1,4 @@
-import avatarImg  from "../public/images/avatar.png";
+import avatarImg from "../public/images/avatar.png";
 
 const bannedXPathSelectors = ["svg", "path"];
 
@@ -33,7 +33,6 @@ export function getXpathSelector(elem) {
     return getXpathSelector(elem.parentNode) + `/${elemStr}[${i}]`;
 }
 
-
 export function executeClick(selectorString, iframeIndex) {
     if (typeof window === "undefined") {
         return;
@@ -46,6 +45,25 @@ export function executeClick(selectorString, iframeIndex) {
     }
 }
 
+export function executeWheel(scrollY, iframeIndex, eventX, eventY) {
+    if (typeof window === "undefined") {
+        return;
+    }
+    const iframe = document.querySelector(`#iframe_${iframeIndex}`);
+    const canvas = iframe.contentWindow.document.querySelector("div.mapboxgl-canvas-container");
+    const { width, height } = iframe.getBoundingClientRect();
+
+    if (canvas) {
+        var event = new WheelEvent('wheel', {
+            clientX: eventX * width,
+            clientY: eventY * height,
+            deltaX: 0, deltaY: scrollY
+        });
+        canvas.dispatchEvent(event);
+    } else {
+        iframe.contentWindow.scrollBy(0, scrollY);
+    }
+}
 
 export function waitForElm(doc, selector) {
     return new Promise(resolve => {
@@ -67,15 +85,6 @@ export function waitForElm(doc, selector) {
     });
 }
 
-export function getIframeSize(iframeIndex) {
-    const iframe = document.querySelector(`#iframe_${iframeIndex}`);
-    if (!iframe) {
-        return;
-    }
-    const { width, height } = iframe.getBoundingClientRect();
-    return {width, height}
-}
-
 export function drawAvatar(iframeIndex, x, y) {
     if (typeof document === "undefined") {
         return;
@@ -87,7 +96,7 @@ export function drawAvatar(iframeIndex, x, y) {
     const scaledY = (y) * 100;
 
     if (!avatar) {
-        var tempDiv = document.createElement("div");x   
+        var tempDiv = document.createElement("div");
         var avatarElem = document.createElement('img');
         avatarElem.setAttribute('id', `avatar_${iframeIndex}`);
         avatarElem.setAttribute('class', `avatar`);

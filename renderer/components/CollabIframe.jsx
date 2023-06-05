@@ -3,8 +3,7 @@ import { getXpathSelector, addItemToArray, waitForElm } from "../utils/helpers"
 import { SocketService } from "../services/socketService"
 import MutationObserver from "mutation-observer"
 
-
-export default function CollabIframe({ iframeIndex }) {
+export default function CollabIframe({ iframeIndex, iframeUrl }) {
     const ref = useRef(null);
     let currentPage;
     let localMutationRecords = [];
@@ -20,7 +19,6 @@ export default function CollabIframe({ iframeIndex }) {
             const y = event.clientY / height;
             SocketService.emit("mousemove", { x, y, iframeIndex });
         }
-
     }
 
     const mouseClickHandler = event => {
@@ -31,12 +29,23 @@ export default function CollabIframe({ iframeIndex }) {
         SocketService.emit("mousedown", { selectorString, iframeIndex });
     }
 
+    const mouseWheelHandler = event => {
+        const iframe = document.querySelector(`#iframe_${iframeIndex}`);
+        if (!iframe) {
+            return;
+        }
+        const scrollY = event.deltaY;
+        const { width, height } = iframe.getBoundingClientRect();
+        const x = event.clientX / width;
+        const y = event.clientY / height;
+
+        SocketService.emit("mousewheel", { scrollY, x, y, iframeIndex });
+    }
+
     const observer = new MutationObserver(mutations => {
         mutations.forEach(elem => {
             if (elem.removedNodes.length > 0) {
-                // console.log(ref.current)
                 const popup = ref.current.contentWindow.document.querySelector(".floating-popup")
-                // console.log(popup, ref.current, "popup")
                 if (popup === null) {
                     SocketService.emit("removedmutationrecord", { iframeIndex });
                 }
@@ -45,9 +54,7 @@ export default function CollabIframe({ iframeIndex }) {
             if (elem.addedNodes.length > 0) {
                 const mutationTarget = getXpathSelector(elem.target);
                 const addedElemHTML = elem.addedNodes[0].outerHTML;
-                // console.log(addedElemHTML, "aaaaa" , mutations.length)
                 if (addedElemHTML) {
-                    console.log("main", elem.addedNodes[0], elem.target)
                     SocketService.emit("addedmutationrecord", { mutationTarget, addedElemHTML, iframeIndex });
                     addItemToArray(localMutationRecords, elem.addedNodes[0], maxNumOfRecords);
                 }
@@ -66,26 +73,22 @@ export default function CollabIframe({ iframeIndex }) {
                 SocketService.emit("modifiedAttributeRecord", {
                     changedAttribute, mutationTarget, mutationValue, mutatedElemHTML, iframeIndex
                 });
-
             }
         })
     })
-    // console.log(ref.current);
 
     useEffect(() => {
-        // console.log(addedMutations, localMutationRecords, "on init?")
 
         const iframe = ref.current;
         let appWindow; let map;
         iframe.addEventListener("load", async () => {
-
             appWindow = iframe.contentWindow.document.getElementById("root");
             appWindow.addEventListener("mousemove", mouseMoveHandler);
             appWindow.addEventListener("mousedown", mouseClickHandler);
+            appWindow.addEventListener("wheel", mouseWheelHandler);
             map = await waitForElm(iframe.contentWindow.document, "div.mapboxgl-map");
             observer.observe(map, { attributes: true, childList: true, subtree: true });
             currentPage = iframe.contentWindow.location.href;
-
         })
 
         SocketService.on(`addMut${iframeIndex}`, (data) => {
@@ -104,7 +107,6 @@ export default function CollabIframe({ iframeIndex }) {
                 if ((mutationTarget === mapRef) || (mutationTarget === addedMutations.at(-1))) {
                     mutationTarget.appendChild(tempDiv.firstChild);
                     addedMutations.push(mutationTarget.lastChild);
-                    console.log("receiver", mutationTarget.lastChild);
                 }
                 tempDiv.remove();
             }
@@ -118,7 +120,6 @@ export default function CollabIframe({ iframeIndex }) {
                 return;
             }
             observer.disconnect();
-            console.log("delete mut")
             addedMutations.forEach((mut) => {
                 mut?.remove();
             })
@@ -126,7 +127,6 @@ export default function CollabIframe({ iframeIndex }) {
             if (mapRef) {
                 observer.observe(mapRef, { attributes: true, childList: true, subtree: true });
             }
-
         })
 
         SocketService.on(`modifyMut${iframeIndex}`, (data) => {
@@ -138,7 +138,6 @@ export default function CollabIframe({ iframeIndex }) {
                 iframe.contentWindow.document, null,
                 XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 
-            // console.log("modify mut", mutationTarget)
             if (mutationTarget) {
                 mutationTarget.innerHTML = data.mutatedElemHTML;
                 mutationTarget.attributes[data.changedAttribute].value = data.mutationValue;
@@ -152,7 +151,6 @@ export default function CollabIframe({ iframeIndex }) {
 
         const urlObserver = setInterval(() => {
             if (currentPage !== iframe.contentWindow.location.href) {
-
                 const canvas = iframe.contentWindow.document.querySelector("canvas");
                 currentPage = iframe.contentWindow.location.href;
                 if (!canvas) {
@@ -164,17 +162,16 @@ export default function CollabIframe({ iframeIndex }) {
             }
         }, 500);
 
-
-
         return () => {
-            // appWindow.removeEventListener("mousemove", mouseMoveHandler);
-            // appWindow.removeEventListener("mousedown", mouseClickHandler);
+            appWindow.removeEventListener("mousemove", mouseMoveHandler);
+            appWindow.removeEventListener("mousedown", mouseClickHandler);
+            appWindow.removeEventListener("wheel", mouseWheelHandler);
             observer.disconnect();
             clearInterval(urlObserver);
         }
     }, [])
     return (
         <iframe ref={ref} id={"iframe_" + iframeIndex}
-            src="http://52.87.229.169:3000/explore/rochester#map=9.64/43.1556/-77.685"></iframe>
+            src={iframeUrl}></iframe>
     )
 }
