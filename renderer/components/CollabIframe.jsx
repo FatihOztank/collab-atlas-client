@@ -91,7 +91,7 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             currentPage = iframe.contentWindow.location.href;
         })
 
-        SocketService.on(`addMut${iframeIndex}`, (data) => {
+        const handleAddMutation = (data) => {
             if (!map || (iframe.contentWindow === null)) {
                 return;
             }
@@ -113,9 +113,9 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             if (mapRef) {
                 observer.observe(mapRef, { attributes: true, childList: true, subtree: true });
             }
-        })
+        }
 
-        SocketService.on(`deleteMut${iframeIndex}`, () => {
+        const handleDeleteMutation = () => {
             if (!map || (iframe.contentWindow === null)) {
                 return;
             }
@@ -127,9 +127,9 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             if (mapRef) {
                 observer.observe(mapRef, { attributes: true, childList: true, subtree: true });
             }
-        })
+        }
 
-        SocketService.on(`modifyMut${iframeIndex}`, (data) => {
+        const handleModifyMutation = (data) => {
             if (!map || (iframe.contentWindow === null)) {
                 return;
             }
@@ -147,7 +147,12 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             if (mapRef) {
                 observer.observe(mapRef, { attributes: true, childList: true, subtree: true });
             }
-        })
+        }
+
+
+        SocketService.on(`addMut${iframeIndex}`, handleAddMutation);
+        SocketService.on(`deleteMut${iframeIndex}`, handleDeleteMutation);
+        SocketService.on(`modifyMut${iframeIndex}`, handleModifyMutation);
 
         const urlObserver = setInterval(() => {
             if (currentPage !== iframe.contentWindow.location.href) {
@@ -168,10 +173,20 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             appWindow.removeEventListener("wheel", mouseWheelHandler);
             observer.disconnect();
             clearInterval(urlObserver);
+            SocketService.off(`addMut${iframeIndex}`, handleAddMutation);
+            SocketService.off(`deleteMut${iframeIndex}`, handleDeleteMutation);
+            SocketService.off(`modifyMut${iframeIndex}`, handleModifyMutation);
+            
         }
     }, [])
     return (
-        <iframe ref={ref} id={"iframe_" + iframeIndex}
-            src={iframeUrl}></iframe>
+        <>
+            <iframe ref={ref} id={"iframe_" + iframeIndex}
+                src={iframeUrl}></iframe>
+
+            <button onClick={() => {
+                document.querySelector(`#iframe_${iframeIndex}`).src = iframeUrl;
+            }}> ddsfdsdf</button>
+        </>
     )
 }
