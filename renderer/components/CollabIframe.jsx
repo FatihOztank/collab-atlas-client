@@ -1,14 +1,24 @@
-import { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from 'react';
 import { getXpathSelector, addItemToArray, waitForElm } from "../utils/helpers"
 import { SocketService } from "../services/socketService"
 import MutationObserver from "mutation-observer"
 
 export default function CollabIframe({ iframeIndex, iframeUrl }) {
     const ref = useRef(null);
+    const overlayRef = useRef(null);
+    const [isOverlayEnabled, setOverlayEnabled] = useState(true);
     let currentPage;
     let localMutationRecords = [];
     let addedMutations = [];
     const maxNumOfRecords = 5;
+
+    async function switchControl() {
+        setOverlayEnabled(!isOverlayEnabled);
+        if (!isOverlayEnabled) {
+            const ctrlSwitch = await waitForElm(document, `#controlSwitch${iframeIndex}`);
+            ctrlSwitch.addEventListener('mousemove', overlayMouseMoveHandler);
+        }
+    }
 
     const mouseMoveHandler = event => {
         const iframe = document.querySelector(`#iframe_${iframeIndex}`);
@@ -17,6 +27,17 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
 
             const x = event.clientX / width;
             const y = event.clientY / height;
+            SocketService.emit("mousemove", { x, y, iframeIndex });
+        }
+    }
+
+    const overlayMouseMoveHandler = event => {
+        const iframe = document.querySelector(`#iframe_${iframeIndex}`);
+        if (iframe) {
+            const { width, height } = iframe.getBoundingClientRect();
+
+            const x = event.layerX / width;
+            const y = event.layerY / height;
             SocketService.emit("mousemove", { x, y, iframeIndex });
         }
     }
@@ -80,6 +101,10 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
     useEffect(() => {
 
         const iframe = ref.current;
+        const overlay = overlayRef.current;
+        if (overlay) {
+            overlay.addEventListener('mousemove', overlayMouseMoveHandler);
+        }
         let appWindow; let map;
         iframe.addEventListener("load", async () => {
             appWindow = iframe.contentWindow.document.getElementById("root");
@@ -171,22 +196,36 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             appWindow.removeEventListener("mousemove", mouseMoveHandler);
             appWindow.removeEventListener("mousedown", mouseClickHandler);
             appWindow.removeEventListener("wheel", mouseWheelHandler);
+            overlay.removeEventListener('mousemove', overlayMouseMoveHandler);
             observer.disconnect();
             clearInterval(urlObserver);
             SocketService.off(`addMut${iframeIndex}`, handleAddMutation);
             SocketService.off(`deleteMut${iframeIndex}`, handleDeleteMutation);
             SocketService.off(`modifyMut${iframeIndex}`, handleModifyMutation);
-            
         }
     }, [])
     return (
         <>
+            {isOverlayEnabled && (
+                <div ref={overlayRef} id={"controlSwitch" + iframeIndex} style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    zIndex: 2,
+                    background: 'transparent',
+                }}></div>
+            )}
             <iframe ref={ref} id={"iframe_" + iframeIndex}
                 src={iframeUrl}></iframe>
 
             <button onClick={() => {
                 document.querySelector(`#iframe_${iframeIndex}`).src = iframeUrl;
             }}> ddsfdsdf</button>
+            <button onClick={() => {
+                switchControl();
+            }}>{isOverlayEnabled ? 'Disable' : 'Enable'} Overlay</button>
         </>
     )
 }
