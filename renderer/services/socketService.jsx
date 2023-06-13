@@ -1,7 +1,7 @@
 
 import EventEmitter from "events";
 import { io } from "socket.io-client";
-import { executeClick, executeWheel, drawAvatar } from "../utils/helpers";
+import { executeClick, executeWheel, drawAvatar, handleCanvasNavigation } from "../utils/helpers";
 
 export const SocketService = new EventEmitter();
 // const ClientSocket = io.connect("https://auspicious-silo-283816.lm.r.appspot.com/");
@@ -26,6 +26,12 @@ SocketService.on("mousewheel", (data) => {
     const scaledX = data.x;
     const scaledY = data.y;
     ClientSocket.emit("mousewheel", { scrollY, iframeIndex, scaledX, scaledY });
+})
+
+SocketService.on("canvasnavigation", (data) => {
+    const iframeIndex = data.iframeIndex;
+    const canvasUrl = data.currentUrl;
+    ClientSocket.emit("canvasnavigation", { iframeIndex, canvasUrl });
 })
 
 SocketService.on("addedmutationrecord", (data) => {
@@ -62,7 +68,6 @@ SocketService.on("iframeToggle", () => {
 
 ClientSocket.on("locationrecord", (data => {
     drawAvatar(data.iframeIndex, data.x, data.y);
-
 }))
 
 ClientSocket.on("eventrecord", (data) => {
@@ -71,6 +76,12 @@ ClientSocket.on("eventrecord", (data) => {
 
 ClientSocket.on("scrollrecord", (data) => {
     executeWheel(data.scrollY, data.iframeIndex, data.scaledX, data.scaledY);
+})
+
+ClientSocket.on("canvasnavigationrecord", (data) => {
+    const iframeIndex = data.iframeIndex;
+    const canvasUrl = data.canvasUrl;
+    handleCanvasNavigation(iframeIndex, canvasUrl);
 })
 
 ClientSocket.on("addedmutation", (data) => {

@@ -2,6 +2,10 @@ import React, { useRef, useEffect, useState } from 'react';
 import { getXpathSelector, addItemToArray, waitForElm } from "../utils/helpers"
 import { SocketService } from "../services/socketService"
 import MutationObserver from "mutation-observer"
+import Button from '@mui/material/Button';
+import { Container } from '@mui/material';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
 
 export default function CollabIframe({ iframeIndex, iframeUrl }) {
     const ref = useRef(null);
@@ -48,6 +52,17 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             return
         }
         SocketService.emit("mousedown", { selectorString, iframeIndex });
+    }
+
+    const canvasNavigationHandler = event => {
+        const selectorString = getXpathSelector(event.target);
+        if (!selectorString.includes("canvas")) {
+            return
+        }
+        setTimeout(function () {
+            const currentUrl = document.querySelector(`#iframe_${iframeIndex}`).contentWindow.location.href;
+            SocketService.emit("canvasnavigation", { currentUrl, iframeIndex });
+        }, 100); // Delay is in milliseconds
     }
 
     const mouseWheelHandler = event => {
@@ -111,6 +126,7 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             appWindow.addEventListener("mousemove", mouseMoveHandler);
             appWindow.addEventListener("mousedown", mouseClickHandler);
             appWindow.addEventListener("wheel", mouseWheelHandler);
+            appWindow.addEventListener("mouseup", canvasNavigationHandler);
             map = await waitForElm(iframe.contentWindow.document, "div.mapboxgl-map");
             observer.observe(map, { attributes: true, childList: true, subtree: true });
             currentPage = iframe.contentWindow.location.href;
@@ -196,6 +212,7 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             appWindow.removeEventListener("mousemove", mouseMoveHandler);
             appWindow.removeEventListener("mousedown", mouseClickHandler);
             appWindow.removeEventListener("wheel", mouseWheelHandler);
+            appWindow.removeEventListener("mouseup", canvasNavigationHandler);
             overlay.removeEventListener('mousemove', overlayMouseMoveHandler);
             observer.disconnect();
             clearInterval(urlObserver);
@@ -219,13 +236,17 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             )}
             <iframe ref={ref} id={"iframe_" + iframeIndex}
                 src={iframeUrl}></iframe>
-
-            <button onClick={() => {
-                document.querySelector(`#iframe_${iframeIndex}`).src = iframeUrl;
-            }}> ddsfdsdf</button>
-            <button onClick={() => {
-                switchControl();
-            }}>{isOverlayEnabled ? 'Disable' : 'Enable'} Overlay</button>
+            <Container>
+                <AppBar position="relative" color="primary" sx={{ backgroundColor: '#000000' }}>
+                    <Toolbar sx={{ justifyContent: 'center', alignItems: 'center' }}>
+                        <Button variant="outlined" onClick={() => {
+                            switchControl();
+                        }}>
+                            {isOverlayEnabled ? 'Enable' : 'Disable'} Controls
+                        </Button>
+                    </Toolbar>
+                </AppBar>
+            </Container>
         </>
     )
 }

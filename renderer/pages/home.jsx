@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
 import { SocketService } from "../services/socketService"
+import Button from '@mui/material/Button';
 
 const CollabIframe = dynamic(() => {
 	return import('../components/CollabIframe')
@@ -42,11 +43,15 @@ function Home() {
 						<CollabIframe iframeIndex={2}
 							iframeUrl={'http://localhost:3000/explore/small-business-support#map=5.25/-32.375/135.814'} />
 					</div>}
+					<Button onClick={buttonHandler} variant='outlined' sx={{
+						position: 'absolute', bottom: 0, left: 0, margin: 'auto', color: '#ff9933', borderColor: 'orange',
+						'&:hover': {
+							borderColor: '#ffcb54',
+							
+						}
+					}}>
+					{isSecondIframeOpen ? 'Close' : 'Open'} Second Atlas</Button>
 			</main>
-			<button onClick={buttonHandler} style={{
-				position: "fixed", color: "blue", height: "8%", top: "90%", backgroundColor: "white",
-			}}
-			>Toggle Second Iframe</button>
 		</>
 	);
 }

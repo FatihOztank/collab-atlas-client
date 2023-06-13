@@ -64,6 +64,12 @@ export function executeWheel(scrollY, iframeIndex, eventX, eventY) {
         iframe.contentWindow.scrollBy(0, scrollY);
     }
 }
+export function handleCanvasNavigation(iframeIndex, canvasUrl) {
+    if (typeof window === "undefined") {
+        return;
+    }
+    document.querySelector(`#iframe_${iframeIndex}`).src = canvasUrl;
+}
 
 export function waitForElm(doc, selector) {
     return new Promise(resolve => {
