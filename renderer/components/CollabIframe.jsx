@@ -193,7 +193,6 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
         }
 
         const handleRemoteLockStateChange = async (data) => {
-            console.log("handleRemoteLockStateChange", data);
             setLockEnabled(!data.lockState);
             if (!isLockEnabled) {
                 const ctrlSwitch = await waitForElm(document, `#controlSwitch${iframeIndex}`);
