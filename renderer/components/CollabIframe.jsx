@@ -9,18 +9,20 @@ import Toolbar from '@mui/material/Toolbar';
 
 export default function CollabIframe({ iframeIndex, iframeUrl }) {
     const ref = useRef(null);
-    const overlayRef = useRef(null);
-    const [isOverlayEnabled, setOverlayEnabled] = useState(true);
+    const lockRef = useRef(null);
+    const [isLockEnabled, setLockEnabled] = useState(true);
     let currentPage;
     let localMutationRecords = [];
     let addedMutations = [];
     const maxNumOfRecords = 5;
 
     async function switchControl() {
-        setOverlayEnabled(!isOverlayEnabled);
-        if (!isOverlayEnabled) {
+        const lockState = !isLockEnabled;
+        SocketService.emit("setLockState", { iframeIndex, lockState });
+        setLockEnabled(!isLockEnabled);
+        if (!isLockEnabled) {
             const ctrlSwitch = await waitForElm(document, `#controlSwitch${iframeIndex}`);
-            ctrlSwitch.addEventListener('mousemove', overlayMouseMoveHandler);
+            ctrlSwitch.addEventListener('mousemove', lockMouseMoveHandler);
         }
     }
 
@@ -35,7 +37,7 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
         }
     }
 
-    const overlayMouseMoveHandler = event => {
+    const lockMouseMoveHandler = event => {
         const iframe = document.querySelector(`#iframe_${iframeIndex}`);
         if (iframe) {
             const { width, height } = iframe.getBoundingClientRect();
@@ -116,9 +118,9 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
     useEffect(() => {
 
         const iframe = ref.current;
-        const overlay = overlayRef.current;
-        if (overlay) {
-            overlay.addEventListener('mousemove', overlayMouseMoveHandler);
+        const lock = lockRef.current;
+        if (lock) {
+            lock.addEventListener('mousemove', lockMouseMoveHandler);
         }
         let appWindow; let map;
         iframe.addEventListener("load", async () => {
@@ -190,10 +192,21 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             }
         }
 
+        const handleRemoteLockStateChange = async (data) => {
+            console.log("handleRemoteLockStateChange", data);
+            setLockEnabled(!data.lockState);
+            if (!isLockEnabled) {
+                const ctrlSwitch = await waitForElm(document, `#controlSwitch${iframeIndex}`);
+                ctrlSwitch.addEventListener('mousemove', lockMouseMoveHandler);
+            }
+        }
+
+
 
         SocketService.on(`addMut${iframeIndex}`, handleAddMutation);
         SocketService.on(`deleteMut${iframeIndex}`, handleDeleteMutation);
         SocketService.on(`modifyMut${iframeIndex}`, handleModifyMutation);
+        SocketService.on(`setLockStateValue${iframeIndex}`, handleRemoteLockStateChange);
 
         const urlObserver = setInterval(() => {
             if (currentPage !== iframe.contentWindow.location.href) {
@@ -213,18 +226,19 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             appWindow.removeEventListener("mousedown", mouseClickHandler);
             appWindow.removeEventListener("wheel", mouseWheelHandler);
             appWindow.removeEventListener("mouseup", canvasNavigationHandler);
-            overlay.removeEventListener('mousemove', overlayMouseMoveHandler);
+            lock.removeEventListener('mousemove', lockMouseMoveHandler);
             observer.disconnect();
             clearInterval(urlObserver);
             SocketService.off(`addMut${iframeIndex}`, handleAddMutation);
             SocketService.off(`deleteMut${iframeIndex}`, handleDeleteMutation);
             SocketService.off(`modifyMut${iframeIndex}`, handleModifyMutation);
+            SocketService.off(`remoteLockStateChange${iframeIndex}`, handleRemoteLockStateChange);
         }
     }, [])
     return (
         <>
-            {isOverlayEnabled && (
-                <div ref={overlayRef} id={"controlSwitch" + iframeIndex} style={{
+            {isLockEnabled && (
+                <div ref={lockRef} id={"controlSwitch" + iframeIndex} style={{
                     position: 'absolute',
                     top: 0,
                     left: 0,
@@ -242,7 +256,7 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
                         <Button variant="outlined" onClick={() => {
                             switchControl();
                         }}>
-                            {isOverlayEnabled ? 'Enable' : 'Disable'} Controls
+                            {isLockEnabled ? 'Enable' : 'Disable'} Controls
                         </Button>
                     </Toolbar>
                 </AppBar>

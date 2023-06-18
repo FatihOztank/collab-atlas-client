@@ -10,15 +10,17 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html, body, #__next {
-    color-scheme: dark;
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    width: 100%;
-  }
+
+html,
+body,
+#__next {
+  color-scheme: dark;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
 }
+
 
 .flex-container {
   display: flex;

@@ -4,8 +4,8 @@ import { io } from "socket.io-client";
 import { executeClick, executeWheel, drawAvatar, handleCanvasNavigation } from "../utils/helpers";
 
 export const SocketService = new EventEmitter();
-// const ClientSocket = io.connect("https://auspicious-silo-283816.lm.r.appspot.com/");
-const ClientSocket = io.connect("http://localhost:8080/");
+const ClientSocket = io.connect("http://54.93.114.230:8080/");
+// const ClientSocket = io.connect("http://localhost:8080/");
 
 SocketService.on("mousemove", (data) => {
     const x = data.x;
@@ -34,6 +34,12 @@ SocketService.on("canvasnavigation", (data) => {
     ClientSocket.emit("canvasnavigation", { iframeIndex, canvasUrl });
 })
 
+SocketService.on("setLockState", (data) => {
+    const iframeIndex = data.iframeIndex;
+    const lockState = data.lockState;
+    ClientSocket.emit("setLockState", { iframeIndex, lockState });
+})
+
 SocketService.on("addedmutationrecord", (data) => {
     const mutationTarget = data.mutationTarget;
     const addedElemHTML = data.addedElemHTML;
@@ -50,14 +56,14 @@ SocketService.on("removedmutationrecord", (data) => {
 })
 
 SocketService.on("modifiedAttributeRecord", (data) => {
-    const changedAttribute = data.changedAttribute; 
+    const changedAttribute = data.changedAttribute;
     const mutationTarget = data.mutationTarget;
     const mutationValue = data.mutationValue;
     const mutatedElemHTML = data.mutatedElemHTML;
     const iframeIndex = data.iframeIndex;
 
     ClientSocket.emit("modifiedAttributeRecord", {
-        changedAttribute, mutationTarget, mutationValue, 
+        changedAttribute, mutationTarget, mutationValue,
         mutatedElemHTML, iframeIndex
     });
 })
@@ -95,7 +101,7 @@ ClientSocket.on("deletemutations", (data) => {
 })
 
 ClientSocket.on("attributeModify", (data) => {
-    const changedAttribute = data.changedAttribute; 
+    const changedAttribute = data.changedAttribute;
     const mutationTarget = data.mutationTarget;
     const mutationValue = data.mutationValue;
     const mutatedElemHTML = data.mutatedElemHTML;
@@ -105,8 +111,12 @@ ClientSocket.on("attributeModify", (data) => {
     });
 })
 
-ClientSocket.on("secondiframeopened",() => {
+ClientSocket.on("secondiframeopened", () => {
     SocketService.emit("secondIframeToggled", {});
 })
 
+ClientSocket.on("setLockStateValue", (data) => {
+    const lockState = data.lockState;
+    SocketService.emit(`setLockStateValue${data.iframeIndex}`, { lockState });
+})
 
