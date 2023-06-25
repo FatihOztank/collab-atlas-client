@@ -13,7 +13,10 @@
     "build:win64": "nextron build --win --x64",
     "build:mac": "nextron build --mac --x64",
     "build:linux": "nextron build --linux",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "getWindowsVersion": "yarn build:win64 && cp -r dist/ ../dist/windows",
+    "getLinuxVersion": "yarn build:linux && cp -r dist/ ../dist/linux",
+    "getApp": "yarn getWindowsVersion && yarn getLinuxVersion" 
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
