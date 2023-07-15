@@ -245,16 +245,27 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
                     height: '100%',
                     zIndex: 2,
                     background: 'transparent',
+                    cursor: 'not-allowed'
                 }}></div>
             )}
             <iframe ref={ref} id={"iframe_" + iframeIndex}
-                src={iframeUrl}></iframe>
+                src={iframeUrl} style={{
+                    ...(isLockEnabled ?
+                        { border: "5px solid #b22222" } :
+                        { border: "3px solid #ffcc66" })
+                }}></iframe>
             <Container>
                 <AppBar position="relative" color="primary" sx={{ backgroundColor: '#000000' }}>
                     <Toolbar sx={{ justifyContent: 'center', alignItems: 'center' }}>
-                        <Button variant="outlined" onClick={() => {
-                            switchControl();
-                        }}>
+                        <Button variant="contained" sx={{
+                            '&:hover': {
+                                backgroundColor: '#ff6611'
+                            },
+                            ...(isLockEnabled ? { backgroundColor: '#ff8822' } : { backgroundColor: '#b22222' })
+                        }}
+                            onClick={() => {
+                                switchControl();
+                            }}>
                             {isLockEnabled ? 'Enable' : 'Disable'} Controls
                         </Button>
                     </Toolbar>

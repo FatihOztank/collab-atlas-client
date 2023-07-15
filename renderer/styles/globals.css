@@ -30,7 +30,6 @@ body,
 
 .flex-child {
   flex: 1;
-  border: 2px solid orange;
   position: relative;
   width: 45%;
   height: 90%;
