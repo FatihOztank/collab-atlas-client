@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { getXpathSelector, addItemToArray, waitForElm } from "../utils/helpers"
+import { getXpathSelector, waitForElm, throttle } from "../utils/helpers"
 import { SocketService } from "../services/socketService"
 import MutationObserver from "mutation-observer"
 import Button from '@mui/material/Button';
@@ -12,41 +12,52 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
     const lockRef = useRef(null);
     const [isLockEnabled, setLockEnabled] = useState(true);
     let currentPage;
-    let localMutationRecords = [];
     let addedMutations = [];
-    const maxNumOfRecords = 5;
-
-    async function switchControl() {
+    let iframe;
+    console.log("rendered")
+    function switchControl() {
         const lockState = !isLockEnabled;
         SocketService.emit("setLockState", { iframeIndex, lockState });
-        setLockEnabled(!isLockEnabled);
-        if (!isLockEnabled) {
-            const ctrlSwitch = await waitForElm(document, `#controlSwitch${iframeIndex}`);
-            ctrlSwitch.addEventListener('mousemove', lockMouseMoveHandler);
+
+        if (isLockEnabled) {
+            waitForElm(document, `#controlSwitch${iframeIndex}`).then((ctrlSwitch) => {
+                ctrlSwitch.removeEventListener('mousemove', throttledLockMouseMoveHandler)
+            }).catch((err) => console.error(err));
+            setLockEnabled(false);
+        } else {
+            setLockEnabled(true);
+            waitForElm(document, `#controlSwitch${iframeIndex}`).then((ctrlSwitch) => {
+                ctrlSwitch.addEventListener('mousemove', throttledLockMouseMoveHandler)
+            }).catch((err) => console.error(err));
         }
     }
 
     const mouseMoveHandler = event => {
-        const iframe = document.querySelector(`#iframe_${iframeIndex}`);
         if (iframe) {
             const { width, height } = iframe.getBoundingClientRect();
-
             const x = event.clientX / width;
             const y = event.clientY / height;
             SocketService.emit("mousemove", { x, y, iframeIndex });
+        } else {
+            iframe = document.querySelector(`#iframe_${iframeIndex}`);
         }
     }
+    const throttledMouseMoveHandler = throttle(mouseMoveHandler, 40);
 
     const lockMouseMoveHandler = event => {
-        const iframe = document.querySelector(`#iframe_${iframeIndex}`);
         if (iframe) {
             const { width, height } = iframe.getBoundingClientRect();
-
             const x = event.layerX / width;
             const y = event.layerY / height;
+            if (!isFinite(x) || !isFinite(y)) {
+                return;
+            }
             SocketService.emit("mousemove", { x, y, iframeIndex });
+        } else {
+            iframe = document.querySelector(`#iframe_${iframeIndex}`);
         }
     }
+    const throttledLockMouseMoveHandler = throttle(lockMouseMoveHandler, 40);
 
     const mouseClickHandler = event => {
         const selectorString = getXpathSelector(event.target);
@@ -57,27 +68,27 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
     }
 
     const canvasNavigationHandler = event => {
-        const selectorString = getXpathSelector(event.target);
-        if (!selectorString.includes("canvas")) {
-            return
+        const canvas = iframe.contentWindow.document.querySelector("div.mapboxgl-canvas-container");
+        if (!canvas) {
+            return;
         }
         setTimeout(function () {
             const currentUrl = document.querySelector(`#iframe_${iframeIndex}`).contentWindow.location.href;
             SocketService.emit("canvasnavigation", { currentUrl, iframeIndex });
-        }, 100); // Delay is in milliseconds
+        }, 100);
     }
 
     const mouseWheelHandler = event => {
-        const iframe = document.querySelector(`#iframe_${iframeIndex}`);
-        if (!iframe) {
-            return;
-        }
-        const scrollY = event.deltaY;
-        const { width, height } = iframe.getBoundingClientRect();
-        const x = event.clientX / width;
-        const y = event.clientY / height;
+        if (iframe) {
+            const scrollY = event.deltaY;
+            const { width, height } = iframe.getBoundingClientRect();
+            const x = event.clientX / width;
+            const y = event.clientY / height;
 
-        SocketService.emit("mousewheel", { scrollY, x, y, iframeIndex });
+            SocketService.emit("mousewheel", { scrollY, x, y, iframeIndex });
+        } else {
+            iframe = document.querySelector(`#iframe_${iframeIndex}`);
+        }
     }
 
     const observer = new MutationObserver(mutations => {
@@ -94,15 +105,10 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
                 const addedElemHTML = elem.addedNodes[0].outerHTML;
                 if (addedElemHTML) {
                     SocketService.emit("addedmutationrecord", { mutationTarget, addedElemHTML, iframeIndex });
-                    addItemToArray(localMutationRecords, elem.addedNodes[0], maxNumOfRecords);
                 }
                 return;
             }
-            if (elem.type === 'attributes') {
-                const indexofMut = localMutationRecords.indexOf(elem.target);
-                if (indexofMut === -1)
-                    return;
-
+            if (elem.type === 'attributes' && elem.attributeName === "style") {
                 const changedAttribute = elem.attributeName;
                 const mutationTarget = getXpathSelector(elem.target);
                 const mutationValue = elem.target.attributes[elem.attributeName].value;
@@ -111,26 +117,30 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
                 SocketService.emit("modifiedAttributeRecord", {
                     changedAttribute, mutationTarget, mutationValue, mutatedElemHTML, iframeIndex
                 });
+                return;
             }
         })
     })
 
     useEffect(() => {
 
-        const iframe = ref.current;
+        iframe = ref.current;
         const lock = lockRef.current;
         if (lock) {
-            lock.addEventListener('mousemove', lockMouseMoveHandler);
+            lock.addEventListener('mousemove', throttledLockMouseMoveHandler, { passive: true });
         }
         let appWindow; let map;
-        iframe.addEventListener("load", async () => {
+        iframe.addEventListener("load", () => {
             appWindow = iframe.contentWindow.document.getElementById("root");
-            appWindow.addEventListener("mousemove", mouseMoveHandler);
+            appWindow.addEventListener("mousemove", throttledMouseMoveHandler);
             appWindow.addEventListener("mousedown", mouseClickHandler);
             appWindow.addEventListener("wheel", mouseWheelHandler);
             appWindow.addEventListener("mouseup", canvasNavigationHandler);
-            map = await waitForElm(iframe.contentWindow.document, "div.mapboxgl-map");
-            observer.observe(map, { attributes: true, childList: true, subtree: true });
+            waitForElm(iframe.contentWindow.document, "div.mapboxgl-map").then((mapRef) => {
+                map = mapRef;
+                console.log(map)
+                observer.observe(map, { attributes: true, childList: true, subtree: true });
+            }).catch((err) => console.error(err));
             currentPage = iframe.contentWindow.location.href;
         })
 
@@ -192,20 +202,24 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             }
         }
 
-        const handleRemoteLockStateChange = async (data) => {
-            setLockEnabled(!data.lockState);
-            if (!isLockEnabled) {
-                const ctrlSwitch = await waitForElm(document, `#controlSwitch${iframeIndex}`);
-                ctrlSwitch.addEventListener('mousemove', lockMouseMoveHandler);
+        const handleRemoteLockStateChange = (data) => {
+            if (data.lockState) {
+                waitForElm(document, `#controlSwitch${iframeIndex}`).then((ctrlSwitch) => {
+                    ctrlSwitch.removeEventListener('mousemove', throttledLockMouseMoveHandler)
+                }).catch((err) => console.error(err));
+                setLockEnabled(false);
+            } else {
+                setLockEnabled(true);
+                waitForElm(document, `#controlSwitch${iframeIndex}`).then((ctrlSwitch) => {
+                    ctrlSwitch.addEventListener('mousemove', throttledLockMouseMoveHandler)
+                }).catch((err) => console.error(err));
             }
         }
 
-
-
-        SocketService.on(`addMut${iframeIndex}`, handleAddMutation);
-        SocketService.on(`deleteMut${iframeIndex}`, handleDeleteMutation);
-        SocketService.on(`modifyMut${iframeIndex}`, handleModifyMutation);
-        SocketService.on(`setLockStateValue${iframeIndex}`, handleRemoteLockStateChange);
+        SocketService.on(`addMut${iframeIndex}`, handleAddMutation, { passive: true });
+        SocketService.on(`deleteMut${iframeIndex}`, handleDeleteMutation, { passive: true });
+        SocketService.on(`modifyMut${iframeIndex}`, handleModifyMutation, { passive: true });
+        SocketService.on(`setLockStateValue${iframeIndex}`, handleRemoteLockStateChange, { passive: true });
 
         const urlObserver = setInterval(() => {
             if (currentPage !== iframe.contentWindow.location.href) {
@@ -213,25 +227,32 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
                 currentPage = iframe.contentWindow.location.href;
                 if (!canvas) {
                     observer.disconnect();
-                } else {
-                    const mapRef = iframe.contentWindow.document.querySelector("div.mapboxgl-map")
-                    observer.observe(mapRef, { attributes: true, childList: true, subtree: true });
+                    return;
                 }
+                const mapRef = iframe.contentWindow.document.querySelector("div.mapboxgl-map")
+                observer.observe(mapRef, { attributes: true, childList: true, subtree: true });
             }
-        }, 500);
+        }, 3000);
 
         return () => {
-            appWindow.removeEventListener("mousemove", mouseMoveHandler);
+            // console.log(appWindow, iframe)
+            if (!appWindow) {
+                appWindow = iframe.contentWindow.document.getElementById("root");
+            }
+            appWindow.removeEventListener("mousemove", throttledMouseMoveHandler);
             appWindow.removeEventListener("mousedown", mouseClickHandler);
             appWindow.removeEventListener("wheel", mouseWheelHandler);
-            appWindow.removeEventListener("mouseup", canvasNavigationHandler);
-            lock.removeEventListener('mousemove', lockMouseMoveHandler);
+            if (lock) {
+                console.log("lock removed")
+                lock.removeEventListener('mousemove', throttledLockMouseMoveHandler);
+            }
             observer.disconnect();
             clearInterval(urlObserver);
             SocketService.off(`addMut${iframeIndex}`, handleAddMutation);
             SocketService.off(`deleteMut${iframeIndex}`, handleDeleteMutation);
             SocketService.off(`modifyMut${iframeIndex}`, handleModifyMutation);
             SocketService.off(`remoteLockStateChange${iframeIndex}`, handleRemoteLockStateChange);
+            console.log("unmounted")
         }
     }, [])
     return (

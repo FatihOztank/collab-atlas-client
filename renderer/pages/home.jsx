@@ -36,12 +36,12 @@ function Home() {
 			<main id='__app' className="flex-container">
 				<div className="flex-child">
 					<CollabIframe iframeIndex={1}
-						iframeUrl={'http://52.87.229.169:3000/explore/small-business-support#map=5.29/-32.197/135'} />
+						iframeUrl={'http://13.38.16.241:3000/explore/small-business-support#map=5.28/-32.197/135'} />
 				</div>
 				{isSecondIframeOpen &&
 					<div className="flex-child">
 						<CollabIframe iframeIndex={2}
-							iframeUrl={'http://52.87.229.169:3000/explore/small-business-support#map=5.29/-32.197/135'} />
+							iframeUrl={'http://13.38.16.241:3000/explore/small-business-support#map=5.28/-32.197/135'} />
 					</div>}
 					<Button onClick={buttonHandler} variant='contained' sx={{
 						position: 'absolute', bottom: 0, left: 0, margin: 'auto', color: 'white',

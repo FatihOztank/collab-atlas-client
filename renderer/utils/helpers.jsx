@@ -3,6 +3,10 @@ import avatarImg from "../public/images/avatar.png";
 const bannedXPathSelectors = ["svg", "path"];
 
 function returnIndexOfElement(elem) {
+    if (elem?.parentNode === null || elem?.parentNode === undefined) {
+        console.log(elem);
+        return -1;
+    }
     const elems = elem?.parentNode.children;
     const length = elems.length;
     let index = 1;
@@ -23,6 +27,10 @@ export function addItemToArray(arr, item, maxLen) {
 }
 
 export function getXpathSelector(elem) {
+    if (elem.parentNode === null || elem.parentNode === undefined) {
+        console.log(elem);
+        return "";
+    }
     if (elem.tagName.toLowerCase() == "html")
         return "/html[1]";
     let elemStr = elem.localName.toLowerCase();
@@ -40,7 +48,7 @@ export function executeClick(selectorString, iframeIndex) {
     const iframeDocument = document.querySelector(`#iframe_${iframeIndex}`).contentWindow.document;
     const elem = iframeDocument.evaluate(selectorString, iframeDocument, null,
         XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-    if (elem?.localName !== "canvas") {
+    if (elem && elem?.localName !== "canvas") {
         elem.click();
     }
 }
@@ -72,7 +80,7 @@ export function handleCanvasNavigation(iframeIndex, canvasUrl) {
 }
 
 export function waitForElm(doc, selector) {
-    return new Promise(resolve => {
+    return new Promise((resolve,reject) => {
         if (doc.querySelector(selector)) {
             return resolve(doc.querySelector(selector));
         }
@@ -88,8 +96,13 @@ export function waitForElm(doc, selector) {
             subtree: true,
             attributes: true
         });
+        setTimeout(() => {
+            observer.disconnect();
+            reject(new Error('Element not found within time limit'));
+        }, 5000);
     });
 }
+
 
 export function drawAvatar(iframeIndex, x, y) {
     if (typeof document === "undefined") {
@@ -101,7 +114,7 @@ export function drawAvatar(iframeIndex, x, y) {
     const scaledX = (x) * 100;
     const scaledY = (y) * 100;
 
-    if (!avatar) {
+    if (!avatar && iframe) {
         var tempDiv = document.createElement("div");
         var avatarElem = document.createElement('img');
         avatarElem.setAttribute('id', `avatar_${iframeIndex}`);
@@ -121,5 +134,18 @@ export function drawAvatar(iframeIndex, x, y) {
     } else {
         avatar.style.top = `${scaledY}%`;
         avatar.style.left = `${scaledX}%`;
+    }
+}
+
+export function throttle(func, limit) {
+    let inThrottle;
+    return function () {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
     }
 }
