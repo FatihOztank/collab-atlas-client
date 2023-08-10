@@ -4,7 +4,6 @@ const bannedXPathSelectors = ["svg", "path"];
 
 function returnIndexOfElement(elem) {
     if (elem?.parentNode === null || elem?.parentNode === undefined) {
-        console.log(elem);
         return -1;
     }
     const elems = elem?.parentNode.children;
@@ -28,7 +27,6 @@ export function addItemToArray(arr, item, maxLen) {
 
 export function getXpathSelector(elem) {
     if (elem.parentNode === null || elem.parentNode === undefined) {
-        console.log(elem);
         return "";
     }
     if (elem.tagName.toLowerCase() == "html")

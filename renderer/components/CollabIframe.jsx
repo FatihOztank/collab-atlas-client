@@ -6,6 +6,7 @@ import Button from '@mui/material/Button';
 import { Container } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
+import styles from '../styles/CollabIframe.module.css'
 
 export default function CollabIframe({ iframeIndex, iframeUrl }) {
     const ref = useRef(null);
@@ -14,7 +15,6 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
     let currentPage;
     let addedMutations = [];
     let iframe;
-    console.log("rendered")
     function switchControl() {
         const lockState = !isLockEnabled;
         SocketService.emit("setLockState", { iframeIndex, lockState });
@@ -27,7 +27,7 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
         } else {
             setLockEnabled(true);
             waitForElm(document, `#controlSwitch${iframeIndex}`).then((ctrlSwitch) => {
-                ctrlSwitch.addEventListener('mousemove', throttledLockMouseMoveHandler)
+                ctrlSwitch.addEventListener('mousemove', throttledLockMouseMoveHandler, { passive: true })
             }).catch((err) => console.error(err));
         }
     }
@@ -131,14 +131,13 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
         }
         let appWindow; let map;
         iframe.addEventListener("load", () => {
-            appWindow = iframe.contentWindow.document.getElementById("root");
-            appWindow.addEventListener("mousemove", throttledMouseMoveHandler);
-            appWindow.addEventListener("mousedown", mouseClickHandler);
-            appWindow.addEventListener("wheel", mouseWheelHandler);
-            appWindow.addEventListener("mouseup", canvasNavigationHandler);
+            appWindow = iframe.contentWindow.document.querySelector("body");
+            appWindow.addEventListener("mousemove", throttledMouseMoveHandler, { passive: true });
+            appWindow.addEventListener("mousedown", mouseClickHandler, { passive: true });
+            appWindow.addEventListener("wheel", mouseWheelHandler, { passive: true });
+            appWindow.addEventListener("mouseup", canvasNavigationHandler, { passive: true });
             waitForElm(iframe.contentWindow.document, "div.mapboxgl-map").then((mapRef) => {
                 map = mapRef;
-                console.log(map)
                 observer.observe(map, { attributes: true, childList: true, subtree: true });
             }).catch((err) => console.error(err));
             currentPage = iframe.contentWindow.location.href;
@@ -211,7 +210,7 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             } else {
                 setLockEnabled(true);
                 waitForElm(document, `#controlSwitch${iframeIndex}`).then((ctrlSwitch) => {
-                    ctrlSwitch.addEventListener('mousemove', throttledLockMouseMoveHandler)
+                    ctrlSwitch.addEventListener('mousemove', throttledLockMouseMoveHandler, { passive: true })
                 }).catch((err) => console.error(err));
             }
         }
@@ -235,15 +234,13 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
         }, 3000);
 
         return () => {
-            // console.log(appWindow, iframe)
             if (!appWindow) {
-                appWindow = iframe.contentWindow.document.getElementById("root");
+                appWindow = iframe.contentWindow.document.querySelector("body");
             }
             appWindow.removeEventListener("mousemove", throttledMouseMoveHandler);
             appWindow.removeEventListener("mousedown", mouseClickHandler);
             appWindow.removeEventListener("wheel", mouseWheelHandler);
             if (lock) {
-                console.log("lock removed")
                 lock.removeEventListener('mousemove', throttledLockMouseMoveHandler);
             }
             observer.disconnect();
@@ -252,41 +249,39 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             SocketService.off(`deleteMut${iframeIndex}`, handleDeleteMutation);
             SocketService.off(`modifyMut${iframeIndex}`, handleModifyMutation);
             SocketService.off(`remoteLockStateChange${iframeIndex}`, handleRemoteLockStateChange);
-            console.log("unmounted")
         }
     }, [])
     return (
         <>
             {isLockEnabled && (
-                <div ref={lockRef} id={"controlSwitch" + iframeIndex} style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    zIndex: 2,
-                    background: 'transparent',
-                    cursor: 'not-allowed'
-                }}></div>
+                <div
+                    ref={lockRef}
+                    id={"controlSwitch" + iframeIndex}
+                    className={styles.lockLayer}
+                ></div>
             )}
-            <iframe ref={ref} id={"iframe_" + iframeIndex}
-                src={iframeUrl} style={{
-                    ...(isLockEnabled ?
-                        { border: "5px solid #b22222" } :
-                        { border: "3px solid #ffcc66" })
-                }}></iframe>
+            <iframe
+                ref={ref}
+                id={"iframe_" + iframeIndex}
+                src={iframeUrl}
+                className={isLockEnabled ? styles.iframeLocked : styles.iframeUnlocked}
+            ></iframe>
             <Container>
-                <AppBar position="relative" color="primary" sx={{ backgroundColor: '#000000' }}>
+                <AppBar position="relative" color="primary" className={styles.appBar}>
                     <Toolbar sx={{ justifyContent: 'center', alignItems: 'center' }}>
-                        <Button variant="contained" sx={{
-                            '&:hover': {
-                                backgroundColor: '#ff6611'
-                            },
-                            ...(isLockEnabled ? { backgroundColor: '#ff8822' } : { backgroundColor: '#b22222' })
-                        }}
+                        <Button
+                            variant="contained"
+                            className={`hover:${styles.buttonHover} ${isLockEnabled ? styles.buttonEnabled : styles.buttonDisabled}`}
+                            sx={{
+                                '&:hover': {
+                                    backgroundColor: '#ff6611'
+                                },
+                                ...(isLockEnabled ? { backgroundColor: '#ff8822' } : { backgroundColor: '#b22222' })
+                            }}
                             onClick={() => {
                                 switchControl();
-                            }}>
+                            }}
+                        >
                             {isLockEnabled ? 'Enable' : 'Disable'} Controls
                         </Button>
                     </Toolbar>

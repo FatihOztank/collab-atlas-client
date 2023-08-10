@@ -1,0 +1,34 @@
+.lockLayer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    background: transparent;
+    cursor: not-allowed;
+}
+
+.iframeLocked {
+    border: 5px solid #b22222;
+}
+
+.iframeUnlocked {
+    border: 3px solid #ffcc66;
+}
+
+.appBar {
+    background-color: #000000;
+}
+
+.buttonHover {
+    background-color: #ff6611;
+}
+
+.buttonEnabled {
+    background-color: #ff8822;
+}
+
+.buttonDisabled {
+    background-color: #b22222;
+}
