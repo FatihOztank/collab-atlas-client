@@ -8,64 +8,42 @@ const ClientSocket = io.connect("http://3.74.211.170:8080/");
 // const ClientSocket = io.connect("http://localhost:8080/");
 
 SocketService.on("mousemove", (data) => {
-    const x = data.x;
-    const y = data.y;
-    const iframeIndex = data.iframeIndex;
-    ClientSocket.emit("mousemove", { x, y, iframeIndex });
+    ClientSocket.emit("mousemove", {
+        x: data.x, y: data.y,
+        iframeIndex: data.iframeIndex, isLocked: data.isLocked
+    });
 })
 
 SocketService.on("mousedown", (data) => {
-    const selectorString = data.selectorString;
-    const iframeIndex = data.iframeIndex;
-    ClientSocket.emit("mousedown", { selectorString, iframeIndex });
+    ClientSocket.emit("mousedown", {
+        selectorString: data.selectorString,
+        iframeIndex: data.iframeIndex
+    });
 })
 
 SocketService.on("mousewheel", (data) => {
-    const scrollY = data.scrollY;
-    const iframeIndex = data.iframeIndex;
-    const scaledX = data.x;
-    const scaledY = data.y;
-    ClientSocket.emit("mousewheel", { scrollY, iframeIndex, scaledX, scaledY });
+    ClientSocket.emit("mousewheel", {
+        scrollY: data.scrollY, iframeIndex: data.iframeIndex,
+        scaledX: data.x, scaledY: data.y
+    });
 })
 
 SocketService.on("canvasnavigation", (data) => {
-    const iframeIndex = data.iframeIndex;
-    const canvasUrl = data.currentUrl;
-    ClientSocket.emit("canvasnavigation", { iframeIndex, canvasUrl });
+    ClientSocket.emit("canvasnavigation", {
+        iframeIndex: data.iframeIndex,
+        canvasUrl: data.canvasUrl
+    });
+})
+
+SocketService.on("canvasclick", (data) => {
+    ClientSocket.emit("canvasclick", {
+        iframeIndex: data.iframeIndex,
+        x: data.x, y: data.y
+    });
 })
 
 SocketService.on("setLockState", (data) => {
-    const iframeIndex = data.iframeIndex;
-    const lockState = data.lockState;
-    ClientSocket.emit("setLockState", { iframeIndex, lockState });
-})
-
-SocketService.on("addedmutationrecord", (data) => {
-    const mutationTarget = data.mutationTarget;
-    const addedElemHTML = data.addedElemHTML;
-    const iframeIndex = data.iframeIndex;
-    ClientSocket.emit("addedmutationrecord", {
-        mutationTarget, addedElemHTML, iframeIndex
-    })
-
-})
-
-SocketService.on("removedmutationrecord", (data) => {
-    const iframeIndex = data.iframeIndex;
-    ClientSocket.emit("removedmutationrecord", { iframeIndex });
-})
-
-SocketService.on("modifiedAttributeRecord", (data) => {
-    const changedAttribute = data.changedAttribute;
-    const mutationTarget = data.mutationTarget;
-    const mutationValue = data.mutationValue;
-    const mutatedElemHTML = data.mutatedElemHTML;
-    const iframeIndex = data.iframeIndex;
-
-    ClientSocket.emit("modifiedAttributeRecord", {
-        changedAttribute, mutationTarget, mutationValue,
-        mutatedElemHTML, iframeIndex
-    });
+    ClientSocket.emit("setLockState", { iframeIndex: data.iframeIndex, lockState: data.lockState });
 })
 
 SocketService.on("iframeToggle", () => {
@@ -74,6 +52,10 @@ SocketService.on("iframeToggle", () => {
 
 ClientSocket.on("locationrecord", (data => {
     drawAvatar(data.iframeIndex, data.x, data.y);
+    SocketService.emit(`mapboxmousemove${data.iframeIndex}`, {
+        x: data.x, y: data.y,
+        isLocked: data.isLocked
+    })
 }))
 
 ClientSocket.on("eventrecord", (data) => {
@@ -85,29 +67,14 @@ ClientSocket.on("scrollrecord", (data) => {
 })
 
 ClientSocket.on("canvasnavigationrecord", (data) => {
-    const iframeIndex = data.iframeIndex;
-    const canvasUrl = data.canvasUrl;
-    handleCanvasNavigation(iframeIndex, canvasUrl);
+    SocketService.emit(`mapboxnavigation${data.iframeIndex}`, {
+        canvasUrl: data.canvasUrl
+    });
 })
 
-ClientSocket.on("addedmutation", (data) => {
-    const mutationTarget = data.mutationTarget;
-    const addedElemHTML = data.addedElemHTML;
-    SocketService.emit(`addMut${data.iframeIndex}`, { mutationTarget, addedElemHTML });
-})
-
-ClientSocket.on("deletemutations", (data) => {
-    SocketService.emit(`deleteMut${data.iframeIndex}`);
-})
-
-ClientSocket.on("attributeModify", (data) => {
-    const changedAttribute = data.changedAttribute;
-    const mutationTarget = data.mutationTarget;
-    const mutationValue = data.mutationValue;
-    const mutatedElemHTML = data.mutatedElemHTML;
-
-    SocketService.emit(`modifyMut${data.iframeIndex}`, {
-        changedAttribute, mutationTarget, mutationValue, mutatedElemHTML
+ClientSocket.on("canvasclickrecord", (data) => {
+    SocketService.emit(`mapboxclick${data.iframeIndex}`, {
+        x: data.x, y: data.y
     });
 })
 
@@ -116,7 +83,6 @@ ClientSocket.on("secondiframeopened", () => {
 })
 
 ClientSocket.on("setLockStateValue", (data) => {
-    const lockState = data.lockState;
-    SocketService.emit(`setLockStateValue${data.iframeIndex}`, { lockState });
+    SocketService.emit(`setLockStateValue${data.iframeIndex}`, { lockState: data.lockState });
 })
 
