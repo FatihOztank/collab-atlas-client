@@ -39,11 +39,11 @@ function Home() {
             </Head>
             <AppBar position="fixed" sx={{ marginRight: isFormOpen ? '500px' : '0px', backgroundColor: 'black' }}>
                 <Toolbar>
-                    <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                    <Typography variant="h6" sx={{ flexGrow: 1, marginLeft: isFormOpen? '500px': '0px' }}>
                         Collaborative Atlas
                     </Typography>
 
-                    <Button onClick={buttonHandler} variant='contained' sx={{
+                    {/*<Button onClick={buttonHandler} variant='contained' sx={{
                         marginRight: 1,
                         '&:hover': {
                             backgroundColor: '#ff6611'
@@ -51,13 +51,13 @@ function Home() {
                         ...(isSecondIframeOpen ? { backgroundColor: 'darkgoldenrod' } : { backgroundColor: 'chocolate' })
                     }}>
                         {isSecondIframeOpen ? 'Close' : 'Open'} Second Atlas
-                    </Button>
+                    </Button>*/}
 
                     <Button onClick={() => setIsFormOpen(!isFormOpen)} variant='contained' sx={{
                         marginRight: 1,
-                        backgroundColor: 'inherit',
+                        backgroundColor: '#313332',
                         '&:hover': {
-                            backgroundColor: 'gray'
+                            backgroundColor: '#4f504f'
                         },
                     }}>
                         {isFormOpen ? 'Close' : 'Open'} Form

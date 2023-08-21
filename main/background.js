@@ -17,6 +17,7 @@ if (isProd) {
   const mainWindow = createWindow('main', {
     width: 1000,
     height: 600,
+    autoHideMenuBar:true,
     webPreferences: {
       nodeIntegration:true,
       webSecurity:false // I know no workaround for this current moment
