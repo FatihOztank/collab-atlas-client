@@ -4,8 +4,8 @@ import { io } from "socket.io-client";
 import { executeClick, executeWheel, drawAvatar, handleCanvasNavigation } from "../utils/helpers";
 
 export const SocketService = new EventEmitter();
-const ClientSocket = io.connect("http://3.74.211.170:8080/");
-// const ClientSocket = io.connect("http://localhost:8080/");
+// const ClientSocket = io.connect("http://3.74.211.170:8080/");
+const ClientSocket = io.connect("http://localhost:8080/");
 
 SocketService.on("mousemove", (data) => {
     ClientSocket.emit("mousemove", {
@@ -50,6 +50,10 @@ SocketService.on("iframeToggle", () => {
     ClientSocket.emit("opensecondiframe", {});
 })
 
+SocketService.on("syncrequest", () => {
+    ClientSocket.emit("syncrequest", {});
+})
+
 ClientSocket.on("locationrecord", (data => {
     drawAvatar(data.iframeIndex, data.x, data.y);
     SocketService.emit(`mapboxmousemove${data.iframeIndex}`, {
@@ -84,5 +88,9 @@ ClientSocket.on("secondiframeopened", () => {
 
 ClientSocket.on("setLockStateValue", (data) => {
     SocketService.emit(`setLockStateValue${data.iframeIndex}`, { lockState: data.lockState });
+})
+
+ClientSocket.on("syncrequestrecord", (data) => {
+    SocketService.emit(`_syncrequestrecord`, {});
 })
 
