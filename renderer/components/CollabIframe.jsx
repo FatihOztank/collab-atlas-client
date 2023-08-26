@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { getXpathSelector, waitForElm, throttle } from "../utils/helpers"
 import { SocketService } from "../services/socketService"
 import Button from '@mui/material/Button';
-import { Container } from '@mui/material';
+import { Container, Grid } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import styles from '../styles/CollabIframe.module.css'
@@ -65,7 +65,7 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             const x = event.clientX / width;
             const y = event.clientY / height;
             SocketService.emit("canvasclick", { iframeIndex, x, y });
-            return
+            return;
         }
         SocketService.emit("mousedown", { selectorString, iframeIndex });
     }
@@ -131,6 +131,18 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
         }
     }
 
+    const syncCanvas = () => {
+        SocketService.emit("syncrequest", {});
+    }
+
+    const syncRequestHandler = () => {
+        const iframe = iframeRef.current;
+        if (iframe) {
+            currentPage = iframe.contentWindow.location.href;
+            SocketService.emit("canvasnavigation", { canvasUrl: currentPage, iframeIndex: iframeIndex });
+        }
+    }
+
     useEffect(() => {
 
         const iframe = iframeRef.current;
@@ -166,6 +178,7 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
         SocketService.on(`mapboxmousemove${iframeIndex}`, throttledMapboxMouseMoveHandler, { passive: true });
         SocketService.on(`mapboxclick${iframeIndex}`, mapboxMouseClickHandler, { passive: true });
         SocketService.on(`mapboxnavigation${iframeIndex}`, mapboxNavigationHandler, { passive: true });
+        SocketService.on(`_syncrequestrecord`, syncRequestHandler, { passive: true });
 
         const urlObserver = setInterval(() => {
             const iframe = iframeRef.current;
@@ -178,7 +191,7 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
                 currentPage = iframe.contentWindow.location.href;
                 SocketService.emit("canvasnavigation", { canvasUrl: currentPage, iframeIndex: iframeIndex });
             }
-        }, 250);
+        }, 100);
 
         return () => {
             if (!appWindow) {
@@ -195,6 +208,7 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             SocketService.off(`mapboxmousemove${iframeIndex}`, throttledMapboxMouseMoveHandler);
             SocketService.off(`mapboxclick${iframeIndex}`, mapboxMouseClickHandler);
             SocketService.off(`mapboxnavigation${iframeIndex}`, mapboxNavigationHandler);
+            SocketService.off(`_syncrequestrecord`, syncRequestHandler);
         }
     }, [])
     return (
@@ -215,21 +229,42 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             <Container>
                 <AppBar position="relative" color="primary" className={styles.appBar}>
                     <Toolbar sx={{ justifyContent: 'center', alignItems: 'center' }}>
-                        <Button
-                            variant="contained"
-                            className={`hover:${styles.buttonHover} ${isLockEnabled ? styles.buttonEnabled : styles.buttonDisabled}`}
-                            sx={{
-                                '&:hover': {
-                                    backgroundColor: '#ff6611'
-                                },
-                                ...(isLockEnabled ? { backgroundColor: '#ff8822' } : { backgroundColor: '#b22222' })
-                            }}
-                            onClick={() => {
-                                switchControl();
-                            }}
-                        >
-                            {isLockEnabled ? 'Enable' : 'Disable'} Controls
-                        </Button>
+                        <Grid container justifyContent="center" alignItems="center" spacing={1}>
+                            <Grid item>
+                                <Button
+                                    variant="contained"
+                                    className={`hover:${styles.buttonHover} ${isLockEnabled ? styles.buttonEnabled : styles.buttonDisabled}`}
+                                    sx={{
+                                        '&:hover': {
+                                            backgroundColor: '#ff6611'
+                                        },
+                                        ...(isLockEnabled ? { backgroundColor: '#ff8822' } : { backgroundColor: '#b22222' })
+                                    }}
+                                    onClick={() => {
+                                        switchControl();
+                                    }}
+                                >
+                                    {isLockEnabled ? 'Enable' : 'Disable'} Controls
+                                </Button>
+                            </Grid>
+                            <Grid item>
+                                <Button
+                                    variant="outlined"
+                                    onClick={() => {
+                                        syncCanvas();
+                                    }}
+                                    disabled={!isLockEnabled}
+                                    sx={{
+                                        '&:hover': {
+                                            backgroundColor: '#333366'
+                                        },
+                                        ...(isLockEnabled ? {backgroundColor: '#222244', color: '#ffffff'} : {backgroundColor: '#333333', color: '#ffffff'})
+                                    }}
+                                >
+                                    Sync Atlas
+                                </Button>
+                            </Grid>
+                        </Grid>
                     </Toolbar>
                 </AppBar>
             </Container>

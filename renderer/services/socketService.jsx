@@ -50,6 +50,10 @@ SocketService.on("iframeToggle", () => {
     ClientSocket.emit("opensecondiframe", {});
 })
 
+SocketService.on("syncrequest", () => {
+    ClientSocket.emit("syncrequest", {});
+})
+
 ClientSocket.on("locationrecord", (data => {
     drawAvatar(data.iframeIndex, data.x, data.y);
     SocketService.emit(`mapboxmousemove${data.iframeIndex}`, {
@@ -84,5 +88,9 @@ ClientSocket.on("secondiframeopened", () => {
 
 ClientSocket.on("setLockStateValue", (data) => {
     SocketService.emit(`setLockStateValue${data.iframeIndex}`, { lockState: data.lockState });
+})
+
+ClientSocket.on("syncrequestrecord", (data) => {
+    SocketService.emit(`_syncrequestrecord`, {});
 })
 
