@@ -4,8 +4,8 @@ import { io } from "socket.io-client";
 import { executeClick, executeWheel, drawAvatar, handleCanvasNavigation } from "../utils/helpers";
 
 export const SocketService = new EventEmitter();
-const ClientSocket = io.connect("http://3.74.211.170:8080/");
-// const ClientSocket = io.connect("http://localhost:8080/");
+// const ClientSocket = io.connect("http://3.74.211.170:8080/");
+const ClientSocket = io.connect("http://localhost:8080/");
 
 SocketService.on("mousemove", (data) => {
     ClientSocket.emit("mousemove", {
