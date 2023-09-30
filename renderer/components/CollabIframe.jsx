@@ -6,6 +6,7 @@ import { Container, Grid } from '@mui/material';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import styles from '../styles/CollabIframe.module.css'
+import { THROTTLE_MOUSE_MOVE_LIMIT, THROTTLE_CANVAS_MOUSE_MOVE_LIMIT } from "../utils/constants";
 
 export default function CollabIframe({ iframeIndex, iframeUrl }) {
     const iframeRef = useRef(null);
@@ -40,7 +41,7 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             SocketService.emit("mousemove", { x, y, iframeIndex, isLocked });
         }
     }
-    const throttledMouseMoveHandler = throttle(mouseMoveHandler, 40);
+    const throttledMouseMoveHandler = throttle(mouseMoveHandler, THROTTLE_MOUSE_MOVE_LIMIT);
 
     const lockMouseMoveHandler = event => {
         const iframe = iframeRef.current;
@@ -55,7 +56,7 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
             SocketService.emit("mousemove", { x, y, iframeIndex, isLocked });
         }
     }
-    const throttledLockMouseMoveHandler = throttle(lockMouseMoveHandler, 40);
+    const throttledLockMouseMoveHandler = throttle(lockMouseMoveHandler, THROTTLE_MOUSE_MOVE_LIMIT);
 
     const mouseClickHandler = event => {
         const selectorString = getXpathSelector(event.target);
@@ -101,7 +102,7 @@ export default function CollabIframe({ iframeIndex, iframeUrl }) {
         });
         canvas.dispatchEvent(event);
     }
-    const throttledMapboxMouseMoveHandler = throttle(mapboxMouseMoveHandler, 20);
+    const throttledMapboxMouseMoveHandler = throttle(mapboxMouseMoveHandler, THROTTLE_CANVAS_MOUSE_MOVE_LIMIT);
 
 
     const mapboxMouseClickHandler = data => {

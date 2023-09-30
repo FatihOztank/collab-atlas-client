@@ -1,6 +1,7 @@
 import { app } from 'electron';
 import serve from 'electron-serve';
 import { createWindow } from './helpers';
+import 'dotenv/config';
 app.commandLine.appendSwitch('disable-site-isolation-trials') // keep an eye on this. It might cause an issue later(low prio)
 
 const isProd = process.env.NODE_ENV === 'production';

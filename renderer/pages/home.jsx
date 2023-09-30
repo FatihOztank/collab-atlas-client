@@ -7,30 +7,31 @@ import Drawer from '@mui/material/Drawer';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
+import { ATLAS_URL } from '../utils/constants';
 
 const CollabIframe = dynamic(() => {
     return import('../components/CollabIframe')
 }, { ssr: false })
 
 function Home() {
-    const [isSecondIframeOpen, setIsSecondIframeOpen] = useState(false);
+    // const [isSecondIframeOpen, setIsSecondIframeOpen] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const buttonHandler = () => {
-        setIsSecondIframeOpen(!isSecondIframeOpen);
-        SocketService.emit("iframeToggle", {});
-    };
+    // const buttonHandler = () => {
+    //     setIsSecondIframeOpen(!isSecondIframeOpen);
+    //     SocketService.emit("iframeToggle", {});
+    // };
 
-    useEffect(() => {
-        const toggleSecondIframe = () => {
-            setIsSecondIframeOpen((prevState) => !prevState);
-        };
+    // useEffect(() => {
+    //     const toggleSecondIframe = () => {
+    //         setIsSecondIframeOpen((prevState) => !prevState);
+    //     };
 
-        SocketService.on("secondIframeToggled", toggleSecondIframe);
+    //     SocketService.on("secondIframeToggled", toggleSecondIframe);
 
-        return () => {
-            SocketService.off("secondIframeToggled", toggleSecondIframe);
-        };
-    }, [isSecondIframeOpen]);
+    //     return () => {
+    //         SocketService.off("secondIframeToggled", toggleSecondIframe);
+    //     };
+    // }, [isSecondIframeOpen]);
 
     return (
         <>
@@ -68,13 +69,13 @@ function Home() {
             <main id='__app' className="flex-container" style={{ marginTop: 64, height: 'calc(100vh - 64px)', overflowY: 'hidden' }}>
                 <div className="flex-child">
                     <CollabIframe iframeIndex={1}
-                        iframeUrl={'http://13.38.16.241:3000/explore/small-business-support#map=5.28/-32.197/135'} />
+                        iframeUrl={`${ATLAS_URL}/explore/small-business-support#map=5.28/-32.197/135`} />
                 </div>
-                {isSecondIframeOpen &&
+                {/* {isSecondIframeOpen &&
                     <div className="flex-child">
                         <CollabIframe iframeIndex={2}
-                            iframeUrl={'http://13.38.16.241:3000/explore/small-business-support#map=5.28/-32.197/135'} />
-                    </div>}
+                            iframeUrl={`${ATLAS_URL}/explore/small-business-support#map=5.28/-32.197/135`} />
+                    </div>} */}
 
                 <Drawer anchor="right" variant="persistent" open={isFormOpen} onClose={() => setIsFormOpen(false)}>
                     <div style={{ width: 500, height: '100%' }}>

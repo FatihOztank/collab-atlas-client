@@ -16,13 +16,14 @@
     "postinstall": "electron-builder install-app-deps",
     "getWindowsVersion": "yarn build:win64 && cp -r dist/ ../dist/windows",
     "getLinuxVersion": "yarn build:linux && cp -r dist/ ../dist/linux",
-    "getApp": "yarn getWindowsVersion && yarn getLinuxVersion" 
+    "getApp": "yarn getWindowsVersion && yarn getLinuxVersion"
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@mui/material": "^5.13.5",
     "@sheerun/mutationobserver-shim": "^0.3.3",
+    "dotenv": "^16.3.1",
     "electron-serve": "^1.1.0",
     "electron-store": "^8.1.0",
     "mutation-observer": "^1.0.3",
